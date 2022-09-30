@@ -14,3 +14,7 @@ User input page:
 Playlist output page:
 
 ![Output Page](/screenshot/screenshot3.png?raw=true)
+
+
+Running
+gunicorn app:app
