@@ -18,3 +18,5 @@ Playlist output page:
 
 Running
 gunicorn app:app
+
+See https://developer.spotify.com/dashboard/applications to set up a spotify app with CLIENT_ID and CLIENT_SECRET
