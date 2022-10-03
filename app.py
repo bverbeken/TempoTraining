@@ -7,14 +7,15 @@ import logging
 import secrets
 import string
 import base64
+import os
 from urllib.parse import urlencode
 
 app = Flask(__name__)
 
 # DO NOT PUBLISH CREDENTIALS!
-CLIENT_ID = 'YOUR_CLIENT_ID'
-CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
-REDIRECT_URI = 'YOUR_REDIRECTT_URI'
+CLIENT_ID = os.environ['SPOTIFY_CLIENT_ID']
+CLIENT_SECRET = os.environ['SPOTIFY_CLIENT_SECRET']
+REDIRECT_URI = os.environ['SPOTIFY_REDIRECT_URI']
 app.secret_key = 'YOUR_SECRET_KEY'
 client_creds = f"{CLIENT_ID}:{CLIENT_SECRET}"
 client_creds_b64 = base64.b64encode(client_creds.encode())
@@ -45,6 +46,7 @@ def login(login):
 		"show_dialog" : "true"
 		}
 	res = make_response(redirect(f'{AUTH_URL}/?{urlencode(payload)}'))
+	print(res.json)
 	res.set_cookie('spotify_auth_state', state)
 
 	return res
@@ -105,18 +107,18 @@ def show_playlist():
 
 	sp = spotipy.Spotify(auth=token)
 
-	# Search for artist 
-	desired_artist_results = sp.search(q="artist:" + desired_artist, type="artist")	
+	# Search for artist
+	desired_artist_results = sp.search(q="artist:" + desired_artist, type="artist")
 	# Handle artist not found
 	if len(desired_artist_results["artists"]["items"]) == 0:
 		return redirect(url_for("artist_not_found"))
 
-	# Get artist info	
+	# Get artist info
 	desired_artist_entry = desired_artist_results["artists"]["items"][0]
 	artist_name = desired_artist_entry["name"]
 	artist_uri = desired_artist_entry["uri"]
-	artist_image_url = desired_artist_entry["images"][0]["url"]	
-	
+	artist_image_url = desired_artist_entry["images"][0]["url"]
+
 	# Get username
 	user_info_url = "https://api.spotify.com/v1/me"
 	user_header = {
@@ -134,7 +136,7 @@ def show_playlist():
 
 	# Make list of tracks
 	list_of_tracks = []
-	
+
 	# Get artist top tracks & add to list of top tracks
 	artist_top_tracks = sp.artist_top_tracks(artist_uri)
 	top_tracks = artist_top_tracks["tracks"]
@@ -148,7 +150,7 @@ def show_playlist():
 		# Get tempo and track id from each individual track in list
 		tempo = item['tempo']
 		track_id = item['id']
-		# Check to see if track tempo fits required BPM 
+		# Check to see if track tempo fits required BPM
 		if (tempo > (desired_bpm-2) and tempo < (desired_bpm+2)) or (tempo*2 > (desired_bpm-2) and tempo*2 < (desired_bpm+2)) or (tempo/2 > (desired_bpm-2) and tempo/2 < (desired_bpm+2)):
 			# Check if track already on list
 			if track_id not in list_of_tracks:
@@ -170,7 +172,7 @@ def show_playlist():
 	artist_recommendations = []
 	for artists in artist_to_recommend:
 		artist_recommendations.append(artists["id"])
-	        
+
 	# Grab slices of artist IDs to feed into get_artist_recommendations function
 	artist_top3 = artist_recommendations[:3]
 	artist_top6 = artist_recommendations[4:6]
@@ -194,7 +196,7 @@ def show_playlist():
 			# Get tempo and track id from each individual track in list
 			tempo = item['tempo']
 			track_id = item['id']
-			# Check to see if track tempo fits required BPM 
+			# Check to see if track tempo fits required BPM
 			if (tempo > (desired_bpm-2) and tempo < (desired_bpm+2)) or (tempo*2 > (desired_bpm-2) and tempo*2 < (desired_bpm+2)) or (tempo/2 > (desired_bpm-2) and tempo/2 < (desired_bpm+2)):
 				# Check if track already on list
 				if track_id not in list_of_tracks:
@@ -213,20 +215,20 @@ def show_playlist():
 			# Get tempo and track id from each individual track in list
 			tempo = item['tempo']
 			track_id = item['id']
-			# Check to see if track tempo fits required BPM 
+			# Check to see if track tempo fits required BPM
 			if (tempo > (desired_bpm-2) and tempo < (desired_bpm+2)) or (tempo*2 > (desired_bpm-2) and tempo*2 < (desired_bpm+2)) or (tempo/2 > (desired_bpm-2) and tempo/2 < (desired_bpm+2)):
 				# Check if track already on list
 				if track_id not in list_of_tracks:
 					list_of_tracks.append(track_id)
 
 
-	# Feed track IDs into functions 
+	# Feed track IDs into functions
 	get_recommendations(top3)
 	get_recommendations(top5)
 	get_recommendations(top7)
 	get_recommendations(top10)
 
-	# Feed artist IDs into functions 
+	# Feed artist IDs into functions
 	get_artist_recommendations(artist_top3)
 	get_artist_recommendations(artist_top6)
 	get_artist_recommendations(artist_top9)
@@ -235,13 +237,13 @@ def show_playlist():
 	get_artist_recommendations(artist_top18)
 	get_artist_recommendations(artist_top21)
 
-	
+
 	# Add list of tracks to playlist
 	add_tracks_to_playlist = sp.user_playlist_add_tracks(username, playlist_id, list_of_tracks)
-		
+
 	# Make playlist iframe href
 	playlist_iframe_href = "https://open.spotify.com/embed?uri=spotify:user:" + username + ":playlist:" + playlist_id + "&theme=white"
-				
+
 	return render_template("your-playlist/index.html", artist_name=artist_name, artist_image_url=artist_image_url, playlist_iframe_href=playlist_iframe_href)
 
 @app.route("/artist-not-found/")
